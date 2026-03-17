@@ -186,6 +186,7 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;}
     <label class="filebtn">📂 Load<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
     <button class="btn bo" onclick="exportData()">💾 Save</button>
     <button class="btn bg" onclick="openAddModal()">+ Add</button>
+    <label class="btn bo" style="cursor:pointer;">⊕ Append<input type="file" accept=".json" style="display:none" onchange="appendData(event)"></label>
   </div>
 </header>
 
@@ -705,6 +706,34 @@ window.importData=function(ev){
         nid=Math.max(0,...showings.map(function(s){return s.id||0;}))+1;
         persist(); render(); toast('✓ Loaded');
       }
+    }catch(err){ alert('Invalid file.'); }
+  };
+  r.readAsText(file); ev.target.value='';
+};
+window.appendData=function(ev){
+  var file=ev.target.files[0]; if(!file) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var d=JSON.parse(e.target.result);
+      var incoming=d.showings&&Array.isArray(d.showings)?d.showings:(Array.isArray(d)?d:[]);
+      if(!incoming.length){ toast('No showings found in file.'); return; }
+      // Build set of existing MLS numbers
+      var existing={};
+      showings.forEach(function(s){ var m=s.detail&&s.detail.mls; if(m) existing[m.toUpperCase()]=true; });
+      var added=0, skipped=0;
+      incoming.forEach(function(s){
+        var m=s.detail&&s.detail.mls;
+        if(m && existing[m.toUpperCase()]){ skipped++; return; }
+        s.id=nid++; s._open=false;
+        showings.push(s);
+        if(m) existing[m.toUpperCase()]=true;
+        added++;
+      });
+      persist(); render();
+      var msg='✓ Appended '+added+' showing'+(added!==1?'s':'');
+      if(skipped) msg+=' · '+skipped+' duplicate'+(skipped!==1?'s':'')+' skipped';
+      toast(msg);
     }catch(err){ alert('Invalid file.'); }
   };
   r.readAsText(file); ev.target.value='';
