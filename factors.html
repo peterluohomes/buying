@@ -169,7 +169,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--g900);
   <div class="score-pill">Highlighted: <b id="tb_highlighted">0</b> / <b id="tb_total">0</b></div>
   <button class="btn btn-ghost" onclick="expandAll()">Expand All</button>
   <button class="btn btn-ghost" onclick="collapseAll()">Collapse All</button>
-  <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+  <button class="btn btn-ghost" onclick="clearAll()" style="color:#c0736a;border-color:#e0d0d0;">🗑 Clear</button>
   <button class="btn btn-navy" onclick="loadFile()">📂 Load JSON</button>
   <button class="btn btn-gold" onclick="saveJSON()">💾 Save JSON</button>
   <button class="btn btn-gold" style="background:var(--navy3);" onclick="savePDF()">📄 Save PDF</button>
@@ -398,6 +398,7 @@ function toggleHighlight(fid) {
   const isOn = row.classList.toggle('highlighted');
   S.highlighted[fid] = isOn;
   updateCount();
+  autoSave();
 }
 
 function toggleNote(fid) {
@@ -406,7 +407,7 @@ function toggleNote(fid) {
   if (wrap.classList.contains('open')) document.getElementById('note_' + fid).focus();
 }
 
-function saveNote(fid, val) { S.notes[fid] = val; }
+function saveNote(fid, val) { S.notes[fid] = val; autoSave(); }
 
 function updateCount() {
   const count = Object.values(S.highlighted).filter(Boolean).length;
@@ -423,7 +424,8 @@ function collapseAll() {
 }
 
 function clearAll() {
-  if (!confirm('Clear all highlights and notes?')) return;
+  if (!confirm('Clear all data, highlights, notes, and form fields?\nThis will also wipe saved data from IndexedDB. Cannot be undone.')) return;
+  // Clear highlights and notes
   document.querySelectorAll('.factor-row').forEach(el => el.classList.remove('highlighted'));
   document.querySelectorAll('.factor-note').forEach(el => el.value = '');
   document.querySelectorAll('.factor-note-wrap').forEach(el => el.classList.remove('open'));
@@ -431,7 +433,14 @@ function clearAll() {
   Object.keys(S.highlighted).forEach(k => S.highlighted[k] = false);
   Object.keys(S.notes).forEach(k => S.notes[k] = '');
   S.overall = '';
+  // Clear form fields
+  ['address','client','date','type','price','agent','mls'].forEach(k => {
+    const el = document.getElementById('f_'+k);
+    if (el) { if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; }
+  });
   updateCount();
+  // Wipe IndexedDB
+  if (_db) { dbClearStore().catch(e => console.error('Clear error:', e)); }
   toast('Cleared.');
 }
 
@@ -471,6 +480,7 @@ function handleLoad(event) {
     try {
       const data = JSON.parse(e.target.result);
       restoreState(data);
+      autoSave();
       toast('Loaded successfully.');
     } catch(err) {
       alert('Invalid JSON file.');
@@ -650,10 +660,87 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+// ── IndexedDB STORAGE LAYER ──────────────────────────────────────────────────
+const DB_NAME = 'plFactorsDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'factors';
+const DB_KEY = 'factorsState';
+let _db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+function dbGet(key) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbPut(key, val) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(STORE_NAME, 'readwrite');
+    const req = tx.objectStore(STORE_NAME).put(val, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbClearStore() {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ── Auto-save (debounced) ────────────────────────────────────────────────────
+let _saveTimer = null;
+function autoSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    if (_db) {
+      const state = {
+        form: getFormData(),
+        highlighted: S.highlighted,
+        notes: S.notes,
+        overall: S.overall
+      };
+      dbPut(DB_KEY, state).catch(e => console.error('IndexedDB save error:', e));
+    }
+  }, 400);
+}
+
+// ── Attach auto-save to cover form fields and overall notes ──────────────────
+['f_address','f_client','f_date','f_type','f_price','f_agent','f_mls'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener('input', autoSave); el.addEventListener('change', autoSave); }
+});
+document.getElementById('overall_notes').addEventListener('input', function() { S.overall = this.value; autoSave(); });
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.getElementById('f_date').value = new Date().toISOString().split('T')[0];
-document.getElementById('overall_notes').addEventListener('input', function() { S.overall = this.value; });
 buildAll();
+
+openDB().then(() => dbGet(DB_KEY)).then(saved => {
+  if (saved && typeof saved === 'object' && (saved.form || saved.highlighted || saved.notes)) {
+    restoreState(saved);
+  }
+}).catch(err => {
+  console.error('IndexedDB init failed:', err);
+});
 </script>
 </body>
 </html>
