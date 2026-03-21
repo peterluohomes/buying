@@ -173,6 +173,14 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;}
 
 /* ── LOAD/SAVE BAR ── */
 .iobar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+
+/* ── SORT BUTTON ── */
+.sort-btn{display:inline-flex;align-items:center;gap:4px;font-size:.62rem;font-weight:600;padding:4px 10px;border-radius:20px;background:transparent;color:var(--muted);border:1.5px solid var(--line);cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.sort-btn:hover{background:var(--creamd);color:var(--navy);border-color:var(--navy);}
+.sort-btn.active{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+.sort-icon{font-size:.75rem;transition:transform .2s;}
+.sort-btn.asc .sort-icon{transform:rotate(0deg);}
+.sort-btn.desc .sort-icon{transform:rotate(180deg);}
 </style>
 </head>
 <body>
@@ -183,8 +191,10 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;}
     <p>Pinnacle Listing System · Peter Luo</p>
   </div>
   <div class="hbtns">
+    <span id="autosave-status" style="font-family:'DM Mono',monospace;font-size:10px;color:#7c9a5e;opacity:0.4;display:flex;align-items:center;transition:opacity 0.4s;white-space:nowrap;">✓ saved</span>
     <label class="filebtn">📂 Load<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
     <button class="btn bo" onclick="exportData()">💾 Save</button>
+    <button class="btn bo" onclick="newSession()">🆕 New</button>
     <button class="btn bg" onclick="openAddModal()">+ Add</button>
     <label class="btn bo" style="cursor:pointer;">⊕ Append<input type="file" accept=".json" style="display:none" onchange="appendData(event)"></label>
   </div>
@@ -199,7 +209,13 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;}
 <div class="main">
   <div class="thead">
     <h2>Properties</h2>
-    <span class="badge" id="cntBadge">0 showings</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="sort-btn" id="sortTimeBtn" onclick="toggleSortByTime()" title="Sort by showing time">
+        <span>⏱ Time</span>
+        <span class="sort-icon" id="sortIcon">↑</span>
+      </button>
+      <span class="badge" id="cntBadge">0 showings</span>
+    </div>
   </div>
   <div class="iobar"></div>
   <div id="showingList"></div>
@@ -329,23 +345,166 @@ var INSTR_OPTIONS = [
 
 function g(id){ return document.getElementById(id); }
 
+// ── INDEXEDDB PERSISTENCE ────────────────────────────────────────
+var DB_NAME = 'PinnacleShowings';
+var DB_VERSION = 1;
+var STORE_NAME = 'sessions';
+var SESSION_KEY = 'current';
+var _db = null;
+var _saveTimer = null;
+
+function _openDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = function(e) {
+      var database = e.target.result;
+      if (!database.objectStoreNames.contains(STORE_NAME)) database.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = function(e) {
+      _db = e.target.result;
+      _db.onclose = function() { _db = null; };
+      resolve(_db);
+    };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+
+function _ensureDB() {
+  if (_db) return Promise.resolve(true);
+  return _openDB().then(function() { return true; }).catch(function() { return false; });
+}
+
+function _getSessionData() {
+  return { date: g('showingDate').value, showings: showings, savedAt: new Date().toISOString() };
+}
+
+function _persistAsync() {
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+  return _ensureDB().then(function(ok) {
+    if (!ok) return;
+    var tx = _db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(_getSessionData(), SESSION_KEY);
+    return new Promise(function(res) {
+      tx.oncomplete = function() { _flashSave(); res(); };
+      tx.onerror = function() { res(); };
+    });
+  }).catch(function(err) { console.warn('Auto-save failed:', err); });
+}
+
+function _persistSync() {
+  if (!_db) return;
+  try { var tx = _db.transaction(STORE_NAME, 'readwrite'); tx.objectStore(STORE_NAME).put(_getSessionData(), SESSION_KEY); } catch(e) {}
+}
+
+function _scheduleSave() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(_persistAsync, 500);
+}
+
+function _flashSave() {
+  var el = g('autosave-status');
+  if (!el) return;
+  el.textContent = '✓ saved'; el.style.opacity = '1';
+  setTimeout(function() { el.style.opacity = '0.4'; }, 1200);
+}
+
+window.addEventListener('beforeunload', function() { if (_saveTimer) clearTimeout(_saveTimer); _persistSync(); });
+document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') { if (_saveTimer) clearTimeout(_saveTimer); _persistSync(); } });
+window.addEventListener('pagehide', function() { if (_saveTimer) clearTimeout(_saveTimer); _persistSync(); });
+
+function _loadFromDB() {
+  return _ensureDB().then(function(ok) {
+    if (!ok) return false;
+    var tx = _db.transaction(STORE_NAME, 'readonly');
+    var req = tx.objectStore(STORE_NAME).get(SESSION_KEY);
+    return new Promise(function(resolve) {
+      req.onsuccess = function() {
+        var session = req.result;
+        if (!session || !Array.isArray(session.showings) || session.showings.length === 0) { resolve(false); return; }
+        showings = session.showings;
+        if (session.date) g('showingDate').value = session.date;
+        nid = Math.max(0, ...showings.map(function(s){ return s.id||0; })) + 1;
+        render();
+        resolve(true);
+      };
+      req.onerror = function() { resolve(false); };
+    });
+  }).catch(function() { return false; });
+}
+
+window.newSession = function() {
+  if (!confirm('Start a new showing sheet?\n\nTip: Use 💾 Save to export a JSON backup first.')) return;
+  showings = []; nid = 1;
+  g('showingDate').value = new Date().toISOString().slice(0, 10);
+  _persistAsync(); render(); toast('✓ New session started');
+};
+
 // Open Google Maps with address as destination
 window.openMaps=function(url){
   window.open(url, '_blank');
 };
 
-// Load from localStorage
-try{
-  var today = new Date().toISOString().slice(0,10);
-  var saved = localStorage.getItem('plShowings');
-  if(saved){ var d=JSON.parse(saved); showings=d.showings||[]; var sd=d.date||today; g('showingDate').value=sd; }
-  else{ g('showingDate').value=today; }
-}catch(e){ g('showingDate').value=new Date().toISOString().slice(0,10); }
+// Set date default, then try IndexedDB restore
+var today = new Date().toISOString().slice(0,10);
+g('showingDate').value = today;
+_loadFromDB().then(function(restored) {
+  if (!restored) render();
+});
 
 var nid = Math.max(0,...showings.map(function(s){return s.id||0;}))+1;
 
+// ── SORT STATE ────────────────────────────────────────────────────
+var _sortDir = 0; // 0=original, 1=asc, -1=desc
+var _origOrder = null; // snapshot of original order (ids)
+
+function timeToMins(t){
+  if(!t) return 9999;
+  var p=t.split(':'); return parseInt(p[0],10)*60+parseInt(p[1],10);
+}
+
+function updateSortBtn(){
+  var btn=g('sortTimeBtn'), icon=g('sortIcon');
+  if(!btn||!icon) return;
+  if(_sortDir===0){
+    btn.classList.remove('active','asc','desc');
+    icon.textContent='↑';
+  } else if(_sortDir===1){
+    btn.classList.add('active'); btn.classList.remove('desc'); btn.classList.add('asc');
+    icon.textContent='↑';
+  } else {
+    btn.classList.add('active'); btn.classList.remove('asc'); btn.classList.add('desc');
+    icon.textContent='↓';
+  }
+}
+
+window.toggleSortByTime=function(){
+  if(_sortDir===0){
+    _origOrder = showings.map(function(s){ return s.id; });
+    _sortDir=1;
+  } else if(_sortDir===1){
+    _sortDir=-1;
+  } else {
+    if(_origOrder){
+      showings.sort(function(a,b){
+        return _origOrder.indexOf(a.id)-_origOrder.indexOf(b.id);
+      });
+    }
+    _sortDir=0;
+    render();
+    updateSortBtn();
+    return;
+  }
+  showings.sort(function(a,b){
+    var sa=timeToMins(a.timeStart), sb=timeToMins(b.timeStart);
+    if(sa!==sb) return _sortDir*(sa-sb);
+    return _sortDir*(timeToMins(a.timeEnd)-timeToMins(b.timeEnd));
+  });
+  render();
+  updateSortBtn();
+};
+
 function persist(){
-  try{ localStorage.setItem('plShowings', JSON.stringify({date:g('showingDate').value, showings:showings})); }catch(e){}
+  _scheduleSave();
 }
 window.saveDate=function(){ persist(); updateDateBar(); };
 
@@ -743,7 +902,6 @@ window.appendData=function(ev){
 var _tt;
 window.toast=function(msg){ var t=g('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(function(){ t.classList.remove('show'); },2200); };
 
-render();
 })();
 </script>
 </body>
