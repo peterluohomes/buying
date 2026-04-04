@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Walk-Through Checklist</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; color: #333; padding: 20px; }
+  .container { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+  .header { background: #1a3a5c; color: #fff; padding: 28px 32px; }
+  .header h1 { font-size: 22px; margin-bottom: 8px; }
+  .header-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .header-meta label { font-size: 13px; opacity: 0.85; }
+  .header-meta input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 13px; }
+  .header-meta input::placeholder { color: rgba(255,255,255,0.5); }
+  .intro { background: #f8f9fa; border-left: 4px solid #1a3a5c; padding: 18px 24px; margin: 24px 28px; font-size: 13.5px; line-height: 1.7; color: #444; border-radius: 0 6px 6px 0; }
+  .intro p { margin-bottom: 10px; }
+  .intro p:last-child { margin-bottom: 0; font-style: italic; font-size: 12px; color: #888; }
+  .section { margin: 0 28px 24px; }
+  .section-title { background: #e8eef4; color: #1a3a5c; font-weight: 700; font-size: 15px; padding: 10px 16px; border-radius: 6px 6px 0 0; border-bottom: 2px solid #1a3a5c; display: flex; justify-content: space-between; align-items: center; }
+  .col-headers { display: flex; gap: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .col-headers span { width: 40px; text-align: center; }
+  /* Table: fixed layout so all rows share the same column widths */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  col.col-label { width: auto; }
+  col.col-radio { width: 52px; }
+  table td { padding: 9px 16px; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+  table td.radio-cell { text-align: center; padding: 9px 4px; }
+  table tbody tr:hover td { background: #f8fbff; }
+  input[type="radio"] { width: 17px; height: 17px; cursor: pointer; accent-color: #1a3a5c; }
+  /* Custom rows live inside the same tbody — identical column widths guaranteed */
+  .custom-item-row td { padding: 6px 16px; border-bottom: 1px solid #eee; }
+  .custom-item-row td.radio-cell { padding: 6px 4px; }
+  .custom-item-row td.label-cell { display: flex; align-items: center; gap: 6px; }
+  .custom-item-input { flex: 1; min-width: 0; border: 1px solid #d0dbe8; border-radius: 4px; padding: 5px 9px; font-size: 14px; font-family: inherit; background: #f8fbff; }
+  .custom-item-input:focus { outline: none; border-color: #1a3a5c; background: #fff; }
+  .btn-remove { background: none; border: none; color: #cc4444; cursor: pointer; font-size: 17px; line-height: 1; padding: 1px 5px; border-radius: 3px; opacity: 0.5; flex-shrink: 0; }
+  .btn-remove:hover { opacity: 1; background: #fee; }
+  /* Action row (+ Add Item  / + Notes buttons) */
+  .action-row td { border-bottom: none; padding: 6px 16px 10px; }
+  .action-row:hover td { background: transparent !important; }
+  .btn-add-item { display: inline-flex; align-items: center; gap: 5px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: #1a3a5c; background: transparent; border: 1px dashed #a0b8d0; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+  .btn-add-item:hover { background: #e8eef4; border-color: #1a3a5c; }
+  .btn-add-notes { display: inline-flex; align-items: center; gap: 5px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: #999; background: transparent; border: 1px dashed #ccc; border-radius: 5px; cursor: pointer; transition: all 0.2s; margin-left: 8px; }
+  .btn-add-notes:hover { background: #f8f9fa; border-color: #888; color: #555; }
+  .btn-add-notes.active { color: #1a3a5c; border-color: #1a3a5c; border-style: solid; }
+  /* Notes row — hidden by default, toggled per section */
+  .notes-row { display: none; }
+  .notes-row td { padding: 0; border-bottom: none; }
+  .notes-row:hover td { background: transparent !important; }
+  .notes-area { width: 100%; border: none; border-top: 1px dashed #ddd; padding: 10px 16px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 56px; background: #fafbfc; color: #555; display: block; }
+  .notes-area:focus { outline: none; background: #fff; }
+  /* Toolbar */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; background: #f8f9fa; border-top: 1px solid #eee; flex-wrap: wrap; gap: 10px; }
+  .btn { padding: 10px 22px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: #1a3a5c; color: #fff; } .btn-primary:hover { background: #254d75; }
+  .btn-secondary { background: #e8eef4; color: #1a3a5c; } .btn-secondary:hover { background: #d0dbe8; }
+  .btn-danger { background: #dc3545; color: #fff; } .btn-danger:hover { background: #c82333; }
+  .btn-export { background: #28a745; color: #fff; } .btn-export:hover { background: #218838; }
+  .saved-list { padding: 18px 28px; }
+  .saved-list h3 { margin-bottom: 10px; font-size: 15px; color: #1a3a5c; }
+  .saved-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f8f9fa; border-radius: 5px; margin-bottom: 6px; font-size: 13px; }
+  .saved-item .info { flex: 1; }
+  .saved-item .actions { display: flex; gap: 6px; }
+  .saved-item .actions button { padding: 4px 10px; font-size: 12px; }
+  .status-bar { padding: 8px 28px; font-size: 12px; color: #888; text-align: right; }
+  .progress-bar { height: 4px; background: #e8eef4; border-radius: 2px; margin: 0 28px 4px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; background: #28a745; transition: width 0.3s; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; }
+    .toolbar, .saved-list, .status-bar, .progress-bar, .action-row, .btn-remove { display: none !important; }
+    .header { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section-title { background: #e8eef4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Final Walk-Through Checklist</h1>
+    <div class="header-meta">
+      <div><label>Property Address</label><br><input type="text" id="meta-address" placeholder="Enter address"></div>
+      <div><label>Inspector Name</label><br><input type="text" id="meta-inspector" placeholder="Enter name"></div>
+      <div><label>Date</label><br><input type="date" id="meta-date"></div>
+    </div>
+  </div>
+  <div class="intro">
+    <p>The final walk-through is not a home inspection. It gives homebuyers an opportunity to inspect a property before closing on the sale. During the walk-through, buyers can determine if the repair work they requested in the sales agreement has been completed, and confirm that the condition of the property has not deteriorated since last seen.</p>
+    <p>Because the walk-through takes place only a few days or even hours before closing, it's easy for excited homebuyers to skip taking another careful look at the property. However, being thorough during these final steps can save buyers from unexpected headaches and expense.</p>
+    <p>Bring this checklist and a copy of your sales agreement to the walk-through to keep you on track. Be sure to discuss any issues you discover with your agent before closing. First thing to do when you enter the house is to run the washing machine, dryer and dishwasher through a short cycle. This way when you are done with all the items on the checklist they should have turned off. Make sure to look for leaks around and below the washers.</p>
+    <p>* This document is not for home inspection or environmental purpose. Please seek professional advice regarding any home inspection or environmental concern.</p>
+  </div>
+  <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+  <div class="status-bar" id="statusBar">0 of 0 items checked</div>
+  <div id="formSections"></div>
+  <div class="toolbar">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="saveForm()">Save</button>
+      <button class="btn btn-secondary" onclick="loadSavedList()">Load Saved</button>
+      <button class="btn btn-danger" onclick="clearForm()">Clear Form</button>
+      <button class="btn btn-export" onclick="exportJSON()">Export JSON</button>
+      <button class="btn btn-secondary" onclick="window.print()">Print</button>
+    </div>
+    <div id="autoSaveIndicator" style="font-size:12px;color:#888;"></div>
+  </div>
+  <div class="saved-list" id="savedList" style="display:none;"></div>
+</div>
+<script>
+const SECTIONS = [
+  { title: "Ensure that requested repairs have been made", items: ["Have all the repairs you requested in your sales agreement been made?","Do you have all warranties and/or bills for repairs made?"] },
+  { title: "Check for items you purchased with the house", items: ["Drapes","Appliances","Lighting","Furnishings","Hot tub or sauna","Play structures","Remote control devices for ceiling fans, alarms, garage doors","Owner\u2019s manuals for appliances and home systems (air conditioning, heating, fireplace units, alarm systems, etc.)","Others:"] },
+  { title: "Check windows and doors", items: ["Do the garage door open properly?","Is there code for garage door? What is the code?","Do the garage door opener work properly?","Do the doors open and close properly?","Do the windows open and close properly?","Do the windows latch?","Are any windows missing screens?","Are there any missing storm windows?","Is there condensation in double-paned windows?","Are there any broken windows?"] },
+  { title: "Check for mold and water damage", items: ["Do the windows have signs of mold?","Are there signs of mold or water damage under the kitchen sink?","Are there signs of mold or water damage in the bathroom?","Are there signs of mold or water damage around the refrigerator area?","Are there signs of mold or water damage around the washer/dryer area?","Are there signs of mold or water damage around the water heater?"] },
+  { title: "Check appliances and systems", items: ["Start the dishwasher when you come in. Can it complete its cycle?","Test the air conditioner. Does the thermostat work? Does the system blow cool air?","Test the heating system work. Does it get hot?","Flip on overhead fans. Do they work?","Test the water heater. Is the water from faucets hot?","Does the doorbell work?","Does the alarm work? What is the code?","Does the intercom work?","Does the garage door open and close smoothly and quietly?","Does the washer work?","Does the dryer work?","Does the stove work (check all burners and oven)?","Does the built-in microwave oven work?","Does the damper in the fireplace work?","Does the gas come on in the gas fireplace?","Does the fan work in the gas fireplace?"] },
+  { title: "Check interior floors, walls, and ceilings", items: ["Are there water stains on the ceiling (especially below bathrooms)?","Have any walls been damaged by movers?","Are handrails in stairways secured?","Have floors been damaged by movers?","Have the floors been damaged by pets?"] },
+  { title: "Check for leaks and plumbing problems", items: ["Flush all toilets. Do they run, empty slowly, or leak?","Check all faucets. Do they leak?","Fill the sinks. Do they drain properly?","Fill the tubs. Do they drain properly?","Do the overflows on the tubs work?","Do the tub jets work? (spa tubs only)?","Turn on all showers. Do they drain properly?","Look under sinks. Any leaks:","Check the basement. Look at the floor, walls, and any exposed plumbing. Are there signs of leaks?"] },
+  { title: "Check electric", items: ["Turn on all lights. Do they work?","Check plate covers. Are they damaged or missing?","Check the kitchen and bathroom outlets. Are there GFCI outlets next to the sinks and other water sources?","Inspect the circuit breaker box. Are all the circuits labeled?"] },
+  { title: "Check exterior", items: ["Is the landscape as you expected it?","Turn on the sprinklers. Do they work?"] },
+  { title: "Check attic and other storage places", items: ["Is it empty?","Do you see signs of pests?"] },
+  { title: "Check for cleanliness", items: ["Is the property clean overall?","Is all personal property not included in the sale removed?","Are there signs of bug infestations?","Is all debris removed?"] }
+];
+
+// ── IndexedDB ──────────────────────────────────────────────
+const DB_NAME = 'FinalWalkThroughDB', DB_VERSION = 1, STORE_NAME = 'inspections';
+let db = null;
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VERSION);
+    r.onupgradeneeded = e => { const d = e.target.result; if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, {keyPath:'id',autoIncrement:true}); };
+    r.onsuccess = e => { db = e.target.result; res(db); };
+    r.onerror = e => rej(e.target.error);
+  });
+}
+const dbOp = (mode, fn) => new Promise((res, rej) => {
+  const tx = db.transaction(STORE_NAME, mode);
+  const req = fn(tx.objectStore(STORE_NAME));
+  req.onsuccess = () => res(req.result);
+  req.onerror  = () => rej(req.error);
+});
+const dbAdd    = r  => dbOp('readwrite', s => s.add(r));
+const dbPut    = r  => dbOp('readwrite', s => s.put(r));
+const dbGetAll = () => dbOp('readonly',  s => s.getAll());
+const dbDelete = id => dbOp('readwrite', s => s.delete(id));
+
+// ── State ──────────────────────────────────────────────────
+const customItems = {};   // { si: [{text, answer}] }
+
+// ── Helpers ────────────────────────────────────────────────
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML; }
+
+// ── Render ─────────────────────────────────────────────────
+function renderForm() {
+  const container = document.getElementById('formSections');
+  container.innerHTML = '';
+  SECTIONS.forEach((section, si) => {
+    if (!customItems[si]) customItems[si] = [];
+    const div = document.createElement('div');
+    div.className = 'section';
+    div.innerHTML = `
+      <div class="section-title">
+        <span>${esc(section.title)}</span>
+        <div class="col-headers"><span>YES</span><span>NO</span></div>
+      </div>
+      <table>
+        <colgroup>
+          <col class="col-label">
+          <col class="col-radio">
+          <col class="col-radio">
+        </colgroup>
+        <tbody id="tbody_${si}">
+          ${section.items.map((item, ii) => `
+            <tr>
+              <td>${esc(item)}</td>
+              <td class="radio-cell"><input type="radio" name="item_${si}_${ii}" value="yes" onchange="updateProgress()"></td>
+              <td class="radio-cell"><input type="radio" name="item_${si}_${ii}" value="no"  onchange="updateProgress()"></td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr class="action-row">
+            <td colspan="3">
+              <button class="btn-add-item" onclick="addCustomItem(${si})">
+                <span style="font-size:16px;font-weight:700;line-height:1">+</span> Add Item
+              </button>
+              <button class="btn-add-notes" id="notesBtn_${si}" onclick="toggleNotes(${si})">
+                <span style="font-size:16px;font-weight:700;line-height:1">+</span> Notes
+              </button>
+            </td>
+          </tr>
+          <tr class="notes-row" id="notesRow_${si}">
+            <td colspan="3">
+              <textarea class="notes-area" id="notes_${si}" placeholder="Add notes for this section..." oninput="autoSave()"></textarea>
+            </td>
+          </tr>
+        </tfoot>
+      </table>`;
+    container.appendChild(div);
+  });
+}
+
+// ── Custom Items ───────────────────────────────────────────
+// Appended as <tr> rows into the same <tbody> so they share
+// the exact same column widths as the standard checklist rows.
+function addCustomItem(si) {
+  const ci = customItems[si].length;
+  customItems[si].push({ text: '', answer: null });
+  appendCustomRow(si, ci);
+  const inp = document.querySelector(`#customRow_${si}_${ci} input[type=text]`);
+  if (inp) inp.focus();
+  updateProgress();
+}
+
+function appendCustomRow(si, ci) {
+  const tbody = document.getElementById(`tbody_${si}`);
+  const name  = `custom_${si}_${ci}`;
+  const tr    = document.createElement('tr');
+  tr.className = 'custom-item-row';
+  tr.id        = `customRow_${si}_${ci}`;
+  tr.innerHTML = `
+    <td class="label-cell">
+      <input type="text" class="custom-item-input"
+             placeholder="Enter custom item..."
+             value="${esc(customItems[si][ci].text)}"
+             oninput="customItems[${si}][${ci}].text = this.value; autoSave();">
+      <button class="btn-remove" onclick="removeCustomItem(${si},${ci})" title="Remove">&#x2715;</button>
+    </td>
+    <td class="radio-cell">
+      <input type="radio" name="${name}" value="yes"
+             onchange="customItems[${si}][${ci}].answer='yes'; updateProgress();"
+             ${customItems[si][ci].answer==='yes' ? 'checked' : ''}>
+    </td>
+    <td class="radio-cell">
+      <input type="radio" name="${name}" value="no"
+             onchange="customItems[${si}][${ci}].answer='no'; updateProgress();"
+             ${customItems[si][ci].answer==='no' ? 'checked' : ''}>
+    </td>`;
+  tbody.appendChild(tr);
+}
+
+function removeCustomItem(si, ci) {
+  customItems[si].splice(ci, 1);
+  const tbody = document.getElementById(`tbody_${si}`);
+  tbody.querySelectorAll('.custom-item-row').forEach(r => r.remove());
+  customItems[si].forEach((_, i) => appendCustomRow(si, i));
+  updateProgress();
+}
+
+// ── Notes toggle ───────────────────────────────────────────
+function toggleNotes(si) {
+  const row  = document.getElementById(`notesRow_${si}`);
+  const btn  = document.getElementById(`notesBtn_${si}`);
+  const open = row.style.display === 'table-row';
+  if (open) {
+    row.style.display = 'none';
+    btn.classList.remove('active');
+    btn.innerHTML = '<span style="font-size:16px;font-weight:700;line-height:1">+</span> Notes';
+  } else {
+    row.style.display = 'table-row';
+    btn.classList.add('active');
+    btn.innerHTML = '<span style="font-size:16px;font-weight:700;line-height:1">&minus;</span> Notes';
+    document.getElementById(`notes_${si}`).focus();
+  }
+}
+function showNotes(si) {
+  const row = document.getElementById(`notesRow_${si}`);
+  if (row.style.display === 'table-row') return;
+  row.style.display = 'table-row';
+  const btn = document.getElementById(`notesBtn_${si}`);
+  btn.classList.add('active');
+  btn.innerHTML = '<span style="font-size:16px;font-weight:700;line-height:1">&minus;</span> Notes';
+}
+
+// ── Progress ───────────────────────────────────────────────
+function updateProgress() {
+  const names = new Set(), checked = new Set();
+  document.querySelectorAll('input[type="radio"]').forEach(r => {
+    names.add(r.name);
+    if (r.checked) checked.add(r.name);
+  });
+  const total = names.size, done = checked.size;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('statusBar').textContent = `${done} of ${total} items checked (${pct}%)`;
+  autoSave();
+}
+
+// ── Collect / Restore ──────────────────────────────────────
+function collectFormData() {
+  const data = {
+    address:   document.getElementById('meta-address').value,
+    inspector: document.getElementById('meta-inspector').value,
+    date:      document.getElementById('meta-date').value,
+    sections:  []
+  };
+  SECTIONS.forEach((section, si) => {
+    const sd = { title: section.title, items: [], customItems: [], notes: '', notesVisible: false };
+    section.items.forEach((item, ii) => {
+      let answer = null;
+      document.querySelectorAll(`input[name="item_${si}_${ii}"]`).forEach(r => { if (r.checked) answer = r.value; });
+      sd.items.push({ question: item, answer });
+    });
+    (customItems[si] || []).forEach(ci => sd.customItems.push({ question: ci.text, answer: ci.answer }));
+    sd.notes = document.getElementById(`notes_${si}`).value;
+    sd.notesVisible = document.getElementById(`notesRow_${si}`).style.display === 'table-row';
+    data.sections.push(sd);
+  });
+  return data;
+}
+
+function restoreFormData(data) {
+  document.getElementById('meta-address').value   = data.address   || '';
+  document.getElementById('meta-inspector').value = data.inspector || '';
+  document.getElementById('meta-date').value      = data.date      || '';
+  if (!data.sections) { updateProgress(); return; }
+  data.sections.forEach((sd, si) => {
+    sd.items.forEach((item, ii) => {
+      if (item.answer) {
+        const r = document.querySelector(`input[name="item_${si}_${ii}"][value="${item.answer}"]`);
+        if (r) r.checked = true;
+      }
+    });
+    if (sd.customItems && sd.customItems.length) {
+      customItems[si] = [];
+      document.getElementById(`tbody_${si}`).querySelectorAll('.custom-item-row').forEach(r => r.remove());
+      sd.customItems.forEach((ci, i) => {
+        customItems[si].push({ text: ci.question || '', answer: ci.answer || null });
+        appendCustomRow(si, i);
+      });
+    }
+    const notesEl = document.getElementById(`notes_${si}`);
+    if (notesEl) notesEl.value = sd.notes || '';
+    if (sd.notesVisible || (sd.notes && sd.notes.trim())) showNotes(si);
+  });
+  updateProgress();
+}
+
+// ── Save / Load ────────────────────────────────────────────
+let currentRecordId = null, autoSaveTimer = null;
+
+function autoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    if (!currentRecordId) return;
+    const data = collectFormData();
+    data.id = currentRecordId;
+    data.savedAt = new Date().toISOString();
+    await dbPut(data);
+    showInd('Auto-saved ' + new Date().toLocaleTimeString(), '#888');
+  }, 2000);
+}
+
+function showInd(msg, color) {
+  const el = document.getElementById('autoSaveIndicator');
+  el.textContent = msg; el.style.color = color || '#888';
+  setTimeout(() => el.textContent = '', 3000);
+}
+
+async function saveForm() {
+  const data = collectFormData();
+  data.savedAt = new Date().toISOString();
+  if (currentRecordId) { data.id = currentRecordId; await dbPut(data); }
+  else { currentRecordId = await dbAdd(data); }
+  showInd('Saved!', '#28a745');
+}
+
+async function loadSavedList() {
+  const list = document.getElementById('savedList');
+  const records = await dbGetAll();
+  if (!records.length) {
+    list.innerHTML = '<h3>Saved Inspections</h3><p style="font-size:13px;color:#888;">No saved inspections yet.</p>';
+    list.style.display = 'block'; return;
+  }
+  records.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+  list.innerHTML = `<h3>Saved Inspections (${records.length})</h3>` + records.map(r => `
+    <div class="saved-item">
+      <div class="info">
+        <strong>${esc(r.address || 'No address')}</strong> &mdash; ${esc(r.inspector || 'No inspector')}<br>
+        <span style="color:#888;font-size:11px;">Saved: ${new Date(r.savedAt).toLocaleString()}</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="loadRecord(${r.id})">Load</button>
+        <button class="btn btn-danger" onclick="deleteRecord(${r.id})" style="font-size:12px;padding:4px 10px;">Delete</button>
+      </div>
+    </div>`).join('');
+  list.style.display = 'block';
+}
+
+async function loadRecord(id) {
+  const records = await dbGetAll();
+  const record  = records.find(r => r.id === id);
+  if (!record) return;
+  clearFormSilent(); restoreFormData(record); currentRecordId = id;
+  document.getElementById('savedList').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteRecord(id) {
+  if (!confirm('Delete this saved inspection?')) return;
+  await dbDelete(id);
+  if (currentRecordId === id) currentRecordId = null;
+  loadSavedList();
+}
+
+function clearFormSilent() {
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  SECTIONS.forEach((_, si) => {
+    document.getElementById(`notes_${si}`).value = '';
+    document.getElementById(`notesRow_${si}`).style.display = 'none';
+    const btn = document.getElementById(`notesBtn_${si}`);
+    btn.classList.remove('active');
+    btn.innerHTML = '<span style="font-size:16px;font-weight:700;line-height:1">+</span> Notes';
+    customItems[si] = [];
+    document.getElementById(`tbody_${si}`).querySelectorAll('.custom-item-row').forEach(r => r.remove());
+  });
+  document.getElementById('meta-address').value   = '';
+  document.getElementById('meta-inspector').value = '';
+  document.getElementById('meta-date').value      = '';
+  updateProgress();
+}
+
+function clearForm() {
+  if (!confirm('Clear all entries? Unsaved changes will be lost.')) return;
+  clearFormSilent(); currentRecordId = null;
+}
+
+function exportJSON() {
+  const data = collectFormData();
+  data.exportedAt = new Date().toISOString();
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `walk-through_${data.address || 'inspection'}_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Init ───────────────────────────────────────────────────
+(async () => {
+  await openDB();
+  renderForm();
+  document.getElementById('meta-date').value = new Date().toISOString().slice(0, 10);
+  ['meta-address', 'meta-inspector', 'meta-date'].forEach(id =>
+    document.getElementById(id).addEventListener('input', autoSave)
+  );
+})();
+</script>
+</body>
+</html>
